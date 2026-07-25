@@ -1,19 +1,6 @@
-import pytest
 from httpx import AsyncClient
 
-
-@pytest.fixture
-async def user(client: AsyncClient) -> dict:
-    resp = await client.post("/users/", json={"full_name": "Alice", "email": "alice@example.com"})
-    assert resp.status_code == 201
-    return resp.json()
-
-
-@pytest.fixture
-async def merchant(client: AsyncClient) -> dict:
-    resp = await client.post("/merchants/", json={"business_name": "Acme Corp"})
-    assert resp.status_code == 201
-    return resp.json()
+import pytest
 
 
 @pytest.mark.asyncio

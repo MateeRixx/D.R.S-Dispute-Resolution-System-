@@ -50,3 +50,17 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest.fixture
+async def user(client: AsyncClient) -> dict:
+    resp = await client.post("/users/", json={"full_name": "Alice", "email": "alice@example.com"})
+    assert resp.status_code == 201
+    return resp.json()
+
+
+@pytest.fixture
+async def merchant(client: AsyncClient) -> dict:
+    resp = await client.post("/merchants/", json={"business_name": "Acme Corp"})
+    assert resp.status_code == 201
+    return resp.json()

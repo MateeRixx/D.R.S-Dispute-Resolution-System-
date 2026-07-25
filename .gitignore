@@ -1,3 +1,4 @@
+# Project docs
 GUIDE
 
 # Backend
@@ -9,8 +10,20 @@ venv/
 env/
 .env
 *.db
+uploads/
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
 
 # Frontend
 node_modules/
 dist/
+.DS_Store
 
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
