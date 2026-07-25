@@ -1,0 +1,537 @@
+[
+  {
+    "id": "T1",
+    "reason_code": "ITEM_NOT_RECEIVED",
+    "user_narrative": "I never received the package. It has been 3 weeks and there is no update.",
+    "merchant_return_policy": "15-day return policy, no questions asked",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 4999.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": "Orders fulfilled within 2 business days."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Mumbai - Andheri West"}
+    },
+    "expected_verdict": "REJECT_CLAIM",
+    "rationale": "Shiprocket shows delivered (+10) with signature (+15). Total merchant score=25, user score=0. Strong merchant evidence; claim rejected."
+  },
+  {
+    "id": "T2",
+    "reason_code": "ITEM_NOT_RECEIVED",
+    "user_narrative": "I placed an order two weeks ago and it still hasn't arrived.",
+    "merchant_return_policy": "7-day return window from delivery date",
+    "mock_responses": {
+      "razorpay": {"status": "FAILED", "amount": 1299.00},
+      "shopify": {"status": "FULFILLED", "refund_policy_violated": false, "refund_policy_excerpt": "We ship within 3 business days."},
+      "shiprocket": {"status": "IN_TRANSIT", "digital_signature": "ABSENT", "location_scan": "Delhi Hub"}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "Razorpay shows FAILED payment (+20 user). Item still in transit, no delivery. User score=20, merchant score=0. Full refund warranted."
+  },
+  {
+    "id": "T3",
+    "reason_code": "ITEM_NOT_RECEIVED",
+    "user_narrative": "The tracking says delivered but I was not home and no one left a notice.",
+    "merchant_return_policy": "No returns on delivered items",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 7499.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": "Delivered orders are non-returnable."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "ABSENT", "location_scan": "Bengaluru - Whitefield"}
+    },
+    "expected_verdict": "NEEDS_HUMAN_INTERVENTION",
+    "rationale": "Shiprocket shows delivered (+10 merchant) but no signature to confirm receipt. User narrative is plausible. Contradictory evidence; neither side dominates. Requires human review."
+  },
+  {
+    "id": "T4",
+    "reason_code": "ITEM_NOT_RECEIVED",
+    "user_narrative": "",
+    "merchant_return_policy": "30-day hassle-free returns",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 19999.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": true, "refund_policy_excerpt": "Returns accepted within 30 days."},
+      "shiprocket": {"status": "PENDING", "digital_signature": "ABSENT", "location_scan": null}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "Empty user narrative but refund_policy_violated (+10 user) and item never shipped (PENDING). User score=10, merchant score=0. Refund issued."
+  },
+  {
+    "id": "T5",
+    "reason_code": "ITEM_NOT_RECEIVED",
+    "user_narrative": "Package was delivered to the wrong address according to the scan location.",
+    "merchant_return_policy": "Returns accepted within 10 days",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 3499.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": "Shipping address is customer responsibility."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "ABSENT", "location_scan": "Chennai - Different Zone"}
+    },
+    "expected_verdict": "PARTIAL_REFUND",
+    "expected_refund_percentage": 50,
+    "rationale": "Delivery scan exists (+10 merchant) but no signature and wrong scan zone. Mixed signals; partial refund of 50% balances the uncertainty."
+  },
+  {
+    "id": "T6",
+    "reason_code": "ITEM_NOT_RECEIVED",
+    "user_narrative": "I received only 1 out of 3 items I ordered.",
+    "merchant_return_policy": "Individual item returns accepted",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 8997.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": "Multi-item orders may ship in batches."},
+      "shiprocket": {"status": "PARTIALLY_DELIVERED", "digital_signature": "PRESENT", "location_scan": "Hyderabad - Gachibowli"}
+    },
+    "expected_verdict": "PARTIAL_REFUND",
+    "expected_refund_percentage": 67,
+    "rationale": "Partial delivery confirmed by Shiprocket. Signature present for delivered portion (+15 merchant). Refund for undelivered 2 of 3 items = 67%."
+  },
+  {
+    "id": "T7",
+    "reason_code": "ITEM_NOT_RECEIVED",
+    "user_narrative": "Order shows delivered but no package at my doorstep for two days now.",
+    "merchant_return_policy": null,
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 29999.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": null},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Pune - Koregaon Park"}
+    },
+    "expected_verdict": "REJECT_CLAIM",
+    "rationale": "Delivery confirmed with signature (+10 +15 merchant). No merchant policy available but evidence strongly favors merchant. Score merchant=25, user=0. Claim rejected."
+  },
+  {
+    "id": "T8",
+    "reason_code": "ITEM_NOT_RECEIVED",
+    "user_narrative": "Shiprocket says returned to origin. The seller never reshipped.",
+    "merchant_return_policy": "Re-shipping within 5 business days of RTO",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 5499.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": true, "refund_policy_excerpt": "Re-shipping policy applies to RTO orders."},
+      "shiprocket": {"status": "RETURNED_TO_ORIGIN", "digital_signature": "ABSENT", "location_scan": "Kolkata - Seller Warehouse"}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "RTO confirmed; item never reached customer. Refund policy violated (+10 user). Merchant failed to reship. Score user=10, merchant=0. Full refund."
+  },
+  {
+    "id": "T9",
+    "reason_code": "ITEM_DEFECTIVE",
+    "user_narrative": "The laptop screen has dead pixels right out of the box. Completely unusable.",
+    "merchant_return_policy": "7-day replacement for manufacturing defects",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 54999.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": "Manufacturing defects covered under 7-day policy."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Mumbai - Bandra"},
+      "defect_analysis": {"defects_detected": true, "defect_description": "Dead pixels detected on display panel", "severity": "HIGH"}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "Defects detected (+15 user). Payment captured but defective product. Score user=15, merchant=10 (delivery+signature). Net favors refund given high severity defect."
+  },
+  {
+    "id": "T10",
+    "reason_code": "ITEM_DEFECTIVE",
+    "user_narrative": "The shirt I received has a small loose thread. Asking for full refund.",
+    "merchant_return_policy": "No refunds on clothing after delivery",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 1499.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": "Clothing items are non-refundable post-delivery."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Delhi - Saket"},
+      "defect_analysis": {"defects_detected": false, "defect_description": "Minor aesthetic imperfection within manufacturing tolerance", "severity": "LOW"}
+    },
+    "expected_verdict": "REJECT_CLAIM",
+    "rationale": "No significant defects detected. Delivery with signature (+10 +15 merchant). Score merchant=25, user=0. Minor thread issue within tolerance; claim rejected."
+  },
+  {
+    "id": "T11",
+    "reason_code": "ITEM_DEFECTIVE",
+    "user_narrative": "The blender stopped working after 2 uses. Motor burnt out.",
+    "merchant_return_policy": "10-day return policy for electronics",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 3999.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": true, "refund_policy_excerpt": "Electronics must be returned within 10 days."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "ABSENT", "location_scan": "Ahmedabad - Satellite"},
+      "defect_analysis": {"defects_detected": true, "defect_description": "Motor failure due to manufacturing defect", "severity": "HIGH"}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "Defects detected (+15 user) + refund_policy_violated (+10 user) + razorpay_failed=NO but strong defect evidence. Score user=25, merchant=10. Full refund warranted."
+  },
+  {
+    "id": "T12",
+    "reason_code": "ITEM_DEFECTIVE",
+    "user_narrative": "Phone camera is blurry but the rest of the phone works fine.",
+    "merchant_return_policy": "Partial replacements for individual components",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 24999.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": "Component-level replacements available."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Bengaluru - Koramangala"},
+      "defect_analysis": {"defects_detected": true, "defect_description": "Camera module focus mechanism defective", "severity": "MEDIUM"}
+    },
+    "expected_verdict": "PARTIAL_REFUND",
+    "expected_refund_percentage": 30,
+    "rationale": "Defect detected on one component (+15 user). Delivery confirmed with signature (+10 +15 merchant). Score merchant=25, user=15. Partial refund of 30% for the defective component."
+  },
+  {
+    "id": "T13",
+    "reason_code": "ITEM_DEFECTIVE",
+    "user_narrative": "",
+    "merchant_return_policy": "14-day no-questions-asked return",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 8999.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": "No questions asked within 14 days."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Chennai - Anna Nagar"},
+      "defect_analysis": {"defects_detected": false, "defect_description": "No defects found on inspection", "severity": "NONE"}
+    },
+    "expected_verdict": "REJECT_CLAIM",
+    "rationale": "Empty user narrative. No defects detected. Delivered with signature (+10 +15 merchant). Score merchant=25, user=0. Claim rejected."
+  },
+  {
+    "id": "T14",
+    "reason_code": "ITEM_DEFECTIVE",
+    "user_narrative": "The item smells strongly of chemicals and is unsafe to use.",
+    "merchant_return_policy": null,
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 2199.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": null},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "ABSENT", "location_scan": "Jaipur - Malviya Nagar"},
+      "defect_analysis": {"defects_detected": true, "defect_description": "Unusual chemical odor; possible hazardous material exposure", "severity": "HIGH"}
+    },
+    "expected_verdict": "NEEDS_HUMAN_INTERVENTION",
+    "rationale": "Severe defect detected (+15 user) but no merchant policy available and safety concern. No payment failure. Merchant policy null. Complexity and safety risk require human review."
+  },
+  {
+    "id": "T15",
+    "reason_code": "ITEM_DEFECTIVE",
+    "user_narrative": "The packaging was damaged in transit and the item inside is scratched.",
+    "merchant_return_policy": "Damage in transit covered by shipper insurance",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 12499.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": "Transit damage handled via Shiprocket insurance claim."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "ABSENT", "location_scan": "Surat - Ring Road"},
+      "defect_analysis": {"defects_detected": true, "defect_description": "Surface scratches consistent with transit damage", "severity": "MEDIUM"}
+    },
+    "expected_verdict": "NEEDS_HUMAN_INTERVENTION",
+    "rationale": "Defect detected (+15 user). Delivered but no signature (+10 merchant only). Damage attributed to transit - liability unclear between merchant and shipper. Human review needed."
+  },
+  {
+    "id": "T16",
+    "reason_code": "ITEM_DEFECTIVE",
+    "user_narrative": "All 5 units I received were defective. None of them work.",
+    "merchant_return_policy": "Bulk order disputes must be raised within 48 hours",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 99999.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": true, "refund_policy_excerpt": "Bulk disputes must be raised within 48 hours of delivery."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Noida - Sector 18"},
+      "defect_analysis": {"defects_detected": true, "defect_description": "Entire batch non-functional; likely batch manufacturing defect", "severity": "CRITICAL"}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "Critical defect on entire batch (+15 user) + refund_policy_violated (+10 user). Score user=25, merchant=25. High amount ₹99,999 with critical defect tips decisively toward full refund."
+  },
+  {
+    "id": "T17",
+    "reason_code": "INCORRECT_AMOUNT",
+    "user_narrative": "I was charged ₹5,999 but the product was listed at ₹4,999. I have a screenshot of the price.",
+    "merchant_return_policy": "Pricing disputes resolved within 5 business days",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 5999.00},
+      "shopify": {"status": "COMPLETED", "order_amount": 4999.00, "refund_policy_violated": true, "refund_policy_excerpt": "Final invoice amount must match checkout price."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Mumbai - Dadar"}
+    },
+    "expected_verdict": "PARTIAL_REFUND",
+    "expected_refund_percentage": 17,
+    "rationale": "Overcharged by ₹1000 on a ₹5999 charge (~17%). Refund policy violated (+10 user). Delivery confirmed (+10 +15 merchant). Partial refund for the overcharged amount."
+  },
+  {
+    "id": "T18",
+    "reason_code": "INCORRECT_AMOUNT",
+    "user_narrative": "My bill shows ₹2,499 but I was charged ₹24,990. Decimal error in the system.",
+    "merchant_return_policy": "Billing errors refunded within 24 hours",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 24990.00},
+      "shopify": {"status": "COMPLETED", "order_amount": 2499.00, "refund_policy_violated": true, "refund_policy_excerpt": "Billing discrepancies refunded promptly."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "ABSENT", "location_scan": "Delhi - Connaught Place"}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "Massive overcharge 10x the order amount. Refund policy violated (+10 user). Razorpay captured wrong amount. Score user=10, merchant=10. Scale of error makes full refund of overage appropriate."
+  },
+  {
+    "id": "T19",
+    "reason_code": "INCORRECT_AMOUNT",
+    "user_narrative": "I used a coupon code but was still charged full price.",
+    "merchant_return_policy": "Coupon issues resolved with proof of code",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 3999.00},
+      "shopify": {"status": "COMPLETED", "order_amount": 3999.00, "coupon_applied": false, "refund_policy_violated": false, "refund_policy_excerpt": "Coupons must be applied at checkout."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Bengaluru - HSR Layout"}
+    },
+    "expected_verdict": "NEEDS_HUMAN_INTERVENTION",
+    "rationale": "Shopify shows no coupon applied and amount matches. User claims coupon was used. No payment failure, no policy violation. Cannot verify coupon without order logs. Human review required."
+  },
+  {
+    "id": "T20",
+    "reason_code": "INCORRECT_AMOUNT",
+    "user_narrative": "",
+    "merchant_return_policy": "No price adjustments after order placement",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 499.00},
+      "shopify": {"status": "COMPLETED", "order_amount": 499.00, "refund_policy_violated": false, "refund_policy_excerpt": "Prices are final at checkout."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Chennai - T Nagar"}
+    },
+    "expected_verdict": "REJECT_CLAIM",
+    "rationale": "Empty narrative. Razorpay amount matches Shopify order amount. Delivered with signature (+10 +15 merchant). No discrepancy found. Claim rejected."
+  },
+  {
+    "id": "T21",
+    "reason_code": "INCORRECT_AMOUNT",
+    "user_narrative": "I cancelled the order before it was shipped but was still charged.",
+    "merchant_return_policy": "Cancellations accepted before shipment",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 6799.00},
+      "shopify": {"status": "CANCELLED", "refund_policy_violated": true, "refund_policy_excerpt": "Pre-shipment cancellations receive full refund."},
+      "shiprocket": {"status": "NOT_CREATED", "digital_signature": "ABSENT", "location_scan": null}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "Order cancelled in Shopify, no shipment created. Refund policy violated (+10 user). Payment still captured. Score user=10, merchant=0. Full refund warranted."
+  },
+  {
+    "id": "T22",
+    "reason_code": "INCORRECT_AMOUNT",
+    "user_narrative": "I was charged in USD instead of INR. The exchange rate made it much more expensive.",
+    "merchant_return_policy": "Currency errors are platform responsibility",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 41500.00},
+      "shopify": {"status": "COMPLETED", "order_amount": 4999.00, "currency_mismatch": true, "refund_policy_violated": true, "refund_policy_excerpt": "All charges in INR for domestic orders."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Pune - Baner"}
+    },
+    "expected_verdict": "NEEDS_HUMAN_INTERVENTION",
+    "rationale": "Major amount discrepancy due to currency error (+10 user). Delivered with signature (+10 +15 merchant). High-value charge of ₹41,500 vs ₹4,999 order. Currency dispute needs finance team intervention."
+  },
+  {
+    "id": "T23",
+    "reason_code": "INCORRECT_AMOUNT",
+    "user_narrative": "I was charged twice for the same order.",
+    "merchant_return_policy": "Duplicate charges refunded automatically",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 9998.00, "duplicate_transaction": true},
+      "shopify": {"status": "COMPLETED", "order_amount": 4999.00, "refund_policy_violated": true, "refund_policy_excerpt": "Duplicate payments auto-refunded."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Hyderabad - Jubilee Hills"}
+    },
+    "expected_verdict": "PARTIAL_REFUND",
+    "expected_refund_percentage": 50,
+    "rationale": "Duplicate charge confirmed by Razorpay. Refund policy violated (+10 user). One charge is legitimate; refund 50% (the duplicate). Delivery confirmed (+10 +15 merchant)."
+  },
+  {
+    "id": "T24",
+    "reason_code": "INCORRECT_AMOUNT",
+    "user_narrative": "Tax was charged incorrectly — I am in a GST-exempt zone.",
+    "merchant_return_policy": "Tax disputes require government-issued exemption certificate",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 11800.00},
+      "shopify": {"status": "COMPLETED", "order_amount": 10000.00, "tax_amount": 1800.00, "refund_policy_violated": false, "refund_policy_excerpt": "GST exemptions require valid certificate."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "ABSENT", "location_scan": "Pondicherry"}
+    },
+    "expected_verdict": "NEEDS_HUMAN_INTERVENTION",
+    "rationale": "Tax dispute requiring legal/compliance verification. No payment failure. Delivered but no signature (+10 merchant). Cannot resolve without exemption certificate review. Human needed."
+  },
+  {
+    "id": "T25",
+    "reason_code": "UNAUTHORIZED_TRANSACTION",
+    "user_narrative": "I never made this purchase. My card was used without my knowledge.",
+    "merchant_return_policy": "Fraud claims escalated to bank",
+    "mock_responses": {
+      "razorpay": {"status": "FAILED", "amount": 14999.00, "fraud_flag": true},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": "Fraudulent orders are investigated immediately."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "ABSENT", "location_scan": "Lucknow - Hazratganj"}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "Razorpay FAILED with fraud flag (+20 user). Unauthorized transaction claim. Score user=20, merchant=10. Strong user-side evidence of fraud. Full refund issued."
+  },
+  {
+    "id": "T26",
+    "reason_code": "UNAUTHORIZED_TRANSACTION",
+    "user_narrative": "My account was hacked and someone placed an order using my saved card.",
+    "merchant_return_policy": "Account security is user responsibility",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 34999.00, "device_fingerprint_match": true, "ip_location": "Same city as user"},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": "Users are responsible for account security."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Gurgaon - DLF Phase 2"}
+    },
+    "expected_verdict": "REJECT_CLAIM",
+    "rationale": "Device fingerprint matches user device and IP is from same city. Delivered with signature (+10 +15 merchant). Payment captured (+0 user). Score merchant=25. Claim rejected."
+  },
+  {
+    "id": "T27",
+    "reason_code": "UNAUTHORIZED_TRANSACTION",
+    "user_narrative": "I see a charge on my statement from your platform but I have no account with you.",
+    "merchant_return_policy": "Non-account holders cannot place orders; investigate immediately",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 8499.00, "account_verified": false},
+      "shopify": {"status": "COMPLETED", "user_account_exists": false, "refund_policy_violated": true, "refund_policy_excerpt": "Guest checkout enabled; charges can occur without account."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "ABSENT", "location_scan": "Indore - Vijay Nagar"}
+    },
+    "expected_verdict": "NEEDS_HUMAN_INTERVENTION",
+    "rationale": "No user account but order completed via guest checkout. Refund policy violated (+10 user). Delivered (+10 merchant). Unusual pattern needing identity verification and fraud investigation."
+  },
+  {
+    "id": "T28",
+    "reason_code": "UNAUTHORIZED_TRANSACTION",
+    "user_narrative": "My minor child used my phone and made a purchase without my permission.",
+    "merchant_return_policy": "No cancellations after order confirmation",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 2999.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": "All orders are final once confirmed."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Vadodara - Alkapuri"}
+    },
+    "expected_verdict": "NEEDS_HUMAN_INTERVENTION",
+    "rationale": "Legitimate device and account used; child purchase claim. Payment captured, delivered with signature (+10 +15 merchant). Policy says no cancellation. Legal nuance around minor transactions requires human review."
+  },
+  {
+    "id": "T29",
+    "reason_code": "UNAUTHORIZED_TRANSACTION",
+    "user_narrative": "",
+    "merchant_return_policy": "Unauthorized transaction claims require police report",
+    "mock_responses": {
+      "razorpay": {"status": "FAILED", "amount": 59999.00, "fraud_flag": true},
+      "shopify": {"status": "CANCELLED", "refund_policy_violated": true, "refund_policy_excerpt": "Fraud orders auto-cancelled and refunded."},
+      "shiprocket": {"status": "NOT_CREATED", "digital_signature": "ABSENT", "location_scan": null}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "Razorpay FAILED with fraud flag (+20 user) + refund_policy_violated (+10 user) + order cancelled + no shipment. Score user=30. Full refund despite empty narrative."
+  },
+  {
+    "id": "T30",
+    "reason_code": "UNAUTHORIZED_TRANSACTION",
+    "user_narrative": "I authorized a payment of ₹999 but was charged ₹9,999.",
+    "merchant_return_policy": "Amount disputes reviewed within 3 days",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 9999.00},
+      "shopify": {"status": "COMPLETED", "order_amount": 9999.00, "refund_policy_violated": false, "refund_policy_excerpt": "Payment amount shown at checkout is final."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Chandigarh - Sector 17"}
+    },
+    "expected_verdict": "NEEDS_HUMAN_INTERVENTION",
+    "rationale": "User claims different authorization amount. Shopify shows ₹9,999 confirmed. Delivered with signature (+10 +15 merchant). Payment gateway shows same amount. Needs transaction audit trail review."
+  },
+  {
+    "id": "T31",
+    "reason_code": "UNAUTHORIZED_TRANSACTION",
+    "user_narrative": "Someone used my stolen credit card details. I have already filed a police complaint.",
+    "merchant_return_policy": "Police FIR required for fraud refund processing",
+    "mock_responses": {
+      "razorpay": {"status": "FAILED", "amount": 44999.00, "fraud_flag": true, "police_fir_noted": true},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": true, "refund_policy_excerpt": "Fraud with police FIR triggers auto-refund review."},
+      "shiprocket": {"status": "IN_TRANSIT", "digital_signature": "ABSENT", "location_scan": "Mumbai Hub"}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "Razorpay FAILED with fraud flag (+20 user) + refund_policy_violated (+10 user). FIR filed. Item in transit, not yet delivered. Score user=30. Intercept shipment and full refund."
+  },
+  {
+    "id": "T32",
+    "reason_code": "UNAUTHORIZED_TRANSACTION",
+    "user_narrative": "I don't recognize this merchant name but I do recall making a purchase around this time.",
+    "merchant_return_policy": "DBA name visible on all receipts",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 1999.00},
+      "shopify": {"status": "COMPLETED", "refund_policy_violated": false, "refund_policy_excerpt": "All merchant details on invoice."},
+      "shiprocket": {"status": "DELIVERED", "digital_signature": "PRESENT", "location_scan": "Nagpur - Sitabuldi"}
+    },
+    "expected_verdict": "REJECT_CLAIM",
+    "rationale": "User acknowledges possible authorization. Payment captured, delivered with signature (+10 +15 merchant). No fraud flag, no payment failure. Score merchant=25. Claim rejected."
+  },
+  {
+    "id": "T33",
+    "reason_code": "SUBSCRIPTION_CANCELLED",
+    "user_narrative": "I cancelled my subscription 2 months ago but keep getting charged every month.",
+    "merchant_return_policy": "Cancellations take effect in the next billing cycle",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 999.00, "recurring_charge": true, "cancellation_acknowledged": false},
+      "shopify": {"status": "COMPLETED", "subscription_status": "ACTIVE", "cancellation_request_date": null, "refund_policy_violated": true, "refund_policy_excerpt": "Cancelled subscriptions are not charged further."},
+      "shiprocket": {"status": "NOT_APPLICABLE", "digital_signature": "ABSENT", "location_scan": null}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "Subscription service; Shiprocket N/A. Refund policy violated (+10 user). Cancellation not acknowledged in system. Recurring charge post-cancellation. Full refund for 2 months overcharged."
+  },
+  {
+    "id": "T34",
+    "reason_code": "SUBSCRIPTION_CANCELLED",
+    "user_narrative": "I cancelled but the system shows it as active. I want a refund for this month.",
+    "merchant_return_policy": "Prorated refunds for mid-cycle cancellations",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 1499.00, "recurring_charge": true},
+      "shopify": {"status": "COMPLETED", "subscription_status": "PENDING_CANCELLATION", "cancellation_request_date": "2026-07-10", "days_used": 10, "billing_cycle_days": 30, "refund_policy_violated": false, "refund_policy_excerpt": "Prorated refunds for unused subscription days."},
+      "shiprocket": {"status": "NOT_APPLICABLE", "digital_signature": "ABSENT", "location_scan": null}
+    },
+    "expected_verdict": "PARTIAL_REFUND",
+    "expected_refund_percentage": 67,
+    "rationale": "Cancellation requested, pending. 10/30 days used = 33% consumed. Prorated refund for remaining 20 days = 67%. Policy allows prorated; no violation."
+  },
+  {
+    "id": "T35",
+    "reason_code": "SUBSCRIPTION_CANCELLED",
+    "user_narrative": "I never signed up for a subscription. This is a recurring charge I did not authorize.",
+    "merchant_return_policy": "Free trial auto-converts to paid subscription",
+    "mock_responses": {
+      "razorpay": {"status": "FAILED", "amount": 2999.00, "recurring_charge": true, "fraud_flag": false},
+      "shopify": {"status": "COMPLETED", "subscription_status": "ACTIVE", "free_trial_consent": false, "refund_policy_violated": true, "refund_policy_excerpt": "Free trial terms disclosed at sign-up."},
+      "shiprocket": {"status": "NOT_APPLICABLE", "digital_signature": "ABSENT", "location_scan": null}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "Razorpay FAILED (+20 user) + refund_policy_violated (+10 user). No trial consent recorded. Score user=30. Unauthorized subscription charge; full refund."
+  },
+  {
+    "id": "T36",
+    "reason_code": "SUBSCRIPTION_CANCELLED",
+    "user_narrative": "",
+    "merchant_return_policy": "Annual subscriptions are non-refundable",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 11988.00, "recurring_charge": true},
+      "shopify": {"status": "COMPLETED", "subscription_status": "ACTIVE", "cancellation_request_date": null, "refund_policy_violated": false, "refund_policy_excerpt": "Annual plans non-refundable after 7-day cooling period."},
+      "shiprocket": {"status": "NOT_APPLICABLE", "digital_signature": "ABSENT", "location_scan": null}
+    },
+    "expected_verdict": "REJECT_CLAIM",
+    "rationale": "No narrative. Subscription active, no cancellation request found. Annual plan non-refundable per policy. No policy violation. Score merchant=0, user=0. Claim rejected."
+  },
+  {
+    "id": "T37",
+    "reason_code": "SUBSCRIPTION_CANCELLED",
+    "user_narrative": "I cancelled via email but the portal doesn't reflect it. I have the email confirmation.",
+    "merchant_return_policy": "Cancellations only via portal; email not accepted",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 1999.00, "recurring_charge": true},
+      "shopify": {"status": "COMPLETED", "subscription_status": "ACTIVE", "cancellation_request_date": null, "refund_policy_violated": false, "refund_policy_excerpt": "Cancellations must be submitted through account portal."},
+      "shiprocket": {"status": "NOT_APPLICABLE", "digital_signature": "ABSENT", "location_scan": null}
+    },
+    "expected_verdict": "NEEDS_HUMAN_INTERVENTION",
+    "rationale": "Disputed cancellation channel. Email vs portal conflict. No policy violation technically. Payment captured, subscription shows active. User has email proof; needs manual verification of communication records."
+  },
+  {
+    "id": "T38",
+    "reason_code": "SUBSCRIPTION_CANCELLED",
+    "user_narrative": "I upgraded my plan but was charged for both old and new plans this month.",
+    "merchant_return_policy": "Plan upgrades replace existing subscription immediately",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 4998.00, "recurring_charge": true, "duplicate_subscription": true},
+      "shopify": {"status": "COMPLETED", "subscription_status": "DUAL_ACTIVE", "refund_policy_violated": true, "refund_policy_excerpt": "Upgrading replaces old plan; no dual billing."},
+      "shiprocket": {"status": "NOT_APPLICABLE", "digital_signature": "ABSENT", "location_scan": null}
+    },
+    "expected_verdict": "PARTIAL_REFUND",
+    "expected_refund_percentage": 50,
+    "rationale": "Dual subscription billing confirmed + refund_policy_violated (+10 user). One plan charge is legitimate. Refund 50% (the old plan charge). Score user=10, merchant=0."
+  },
+  {
+    "id": "T39",
+    "reason_code": "SUBSCRIPTION_CANCELLED",
+    "user_narrative": "My subscription was paused not cancelled. I was still charged during the pause period.",
+    "merchant_return_policy": "Paused subscriptions are not charged",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 799.00, "recurring_charge": true},
+      "shopify": {"status": "COMPLETED", "subscription_status": "PAUSED", "pause_start_date": "2026-06-01", "charge_date": "2026-06-15", "refund_policy_violated": true, "refund_policy_excerpt": "No charges during pause period."},
+      "shiprocket": {"status": "NOT_APPLICABLE", "digital_signature": "ABSENT", "location_scan": null}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "Charged during confirmed pause period. Refund policy violated (+10 user). Shopify confirms PAUSED status on charge date. Score user=10, merchant=0. Full refund."
+  },
+  {
+    "id": "T40",
+    "reason_code": "SUBSCRIPTION_CANCELLED",
+    "user_narrative": "The subscription service was discontinued by the merchant but I was still charged.",
+    "merchant_return_policy": "Service discontinuation includes 30-day notice and pro-rated refund",
+    "mock_responses": {
+      "razorpay": {"status": "CAPTURED", "amount": 4999.00, "recurring_charge": true},
+      "shopify": {"status": "COMPLETED", "subscription_status": "DISCONTINUED", "discontinuation_notice_sent": false, "refund_policy_violated": true, "refund_policy_excerpt": "Service discontinued subscribers receive prorated refunds."},
+      "shiprocket": {"status": "NOT_APPLICABLE", "digital_signature": "ABSENT", "location_scan": null}
+    },
+    "expected_verdict": "REFUND_USER",
+    "rationale": "Service discontinued by merchant, no notice sent to user, refund_policy_violated (+10 user). Payment captured for a non-existent service. Score user=10, merchant=0. Full refund."
+  }
+]

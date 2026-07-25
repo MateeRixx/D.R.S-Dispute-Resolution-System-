@@ -10,155 +10,126 @@ AI-powered chargeback resolution platform for Indian D2C e-commerce. Automates e
 |-------|------|
 | Backend | Python 3.13+, FastAPI, SQLAlchemy 2.0, asyncpg |
 | Database | PostgreSQL 16 |
-| AI/OCR | Gemini 2.0 Flash (vision + OCR), Claude 3.5 Sonnet (reasoning) |
+| AI/OCR | Gemini 2.0 Flash (vision + OCR), Groq (LLaMA 3 70B, reasoning) |
 | Frontend | React 19, Vite 8, GSAP 3, Three.js, Tailwind CSS |
 | Auth | JWT (PyJWT), RBAC (customer / merchant / admin) |
 | Integrations | Razorpay, Shopify, Shiprocket |
 
 ---
 
-## Current State
+## Features
 
-### ✅ Completed
+### Phase 1 — Database + Core API
+- PostgreSQL models: User, Merchant, Dispute, Evidence, AuditTrail, AutoFetchedLogs
+- CRUD endpoints for disputes, evidence, merchants
+- Alembic migrations with full schema history
 
-**Phase 1 — Database + Core API**
-- PostgreSQL models: User, Dispute, Evidence, AuditTrail, MerchantDispute, DisputeLog
-- CRUD endpoints: disputes, evidence, merchants, users
-- Alembic migrations configured
-- 7 tests passing
-
-**Phase 2 — OCR + Vision**
+### Phase 2 — OCR + Vision
 - Gemini 2.0 Flash for document OCR and image analysis
-- Evidence upload endpoint with structured extraction prompts
-- 10 tests passing
+- Evidence upload endpoint with structured extraction (invoice lines, defect regions)
+- PII scrubbing before LLM processing
 
-**Phase 3 — Auto-Fetch + Adjudication**
-- Razorpay/Shopify/Shiprocket async fetchers with BackgroundTasks
+### Phase 3 — Auto-Fetch + Adjudication
+- Razorpay / Shopify / Shiprocket data fetchers via BackgroundTasks
 - 5-rule deterministic scoring matrix (documentation, timeline, evidence quality, merchant cooperation, amount ratio)
-- 11 tests passing
+- 40-case golden dataset for correctness evaluation
 
-**Phase 4 — Reasoning Engine**
-- Prompt pipeline: evidence summary → fairness scores → PII-scrubbed narrative → merchant policy → reason code → amount
-- Primary: Claude 3.5 Sonnet → Fallback: Gemini 2.0 Flash → Fallback: deterministic verdict
-- PII scrubbing: cards, phones, emails via `security.py`
-- Adjudication service calls `generate_verdict()`, sets verdict/confidence/status, writes audit trail
-- 24 new tests (security 7, reasoning 11, portal 5, adjudication 1)
+### Phase 4 — Reasoning Engine + Frontend
+- LLM pipeline: Groq (LLaMA 3 70B) → Gemini 2.0 Flash → deterministic fallback
+- Evidence summary → fairness scores → PII-scrubbed narrative → merchant policy → verdict
+- Landing page: full-viewport 3D HeroScene (Three.js), particle system, magnetic buttons, GSAP scroll animations
+- Portal pages: CustomerPortal, MerchantDashboard, AdminAuditLog
 
-**Phase 4 — Frontend**
-- Landing page: full-viewport hero, 3D HeroScene (Three.js), 400-particle system, magnetic buttons, card tilt, marquee strip, custom cursor, GSAP scroll-triggered animations, Lenis-free smooth native scroll
-- Portal pages: CustomerPortal (dispute list + create + detail with stepper/verdict/evidence), MerchantDashboard (stats + defence upload), AdminAuditLog (expandable audit trail)
-- Reusable components: Navbar, PortalLayout, DisputeStepper, VerdictCard, EvidenceInspector, UploadZone, LoginModal, CardTilt, CustomCursor, MagneticButton, MarqueeStrip, HeroScene
-- SSE hook (`useDisputeSSE`) for live dispute updates
-- API client library (`lib/api.js`)
-- Design tokens in Tailwind config (warm ivory + deep navy palette)
+### Phase 5 — Frontend–Backend Integration
+- Login flow with JWT, role-based routing (customer/merchant/admin)
+- Customer: file disputes, view live status via SSE, upload evidence
+- Merchant: view assigned disputes, submit defence evidence
+- Admin: full audit trail with expandable metadata
 
-**Testing**
-- 51 backend tests passing (pytest-asyncio, transaction-per-test isolation, NullPool)
-- conftest: fixed asyncpg connection reuse, removed deprecated `event_loop` fixture
+### Phase 6 — Error Handling
+- ErrorBoundary, Toast notifications, loading skeletons
+- SSE auto-reconnect with exponential backoff
+- API retry with exponential backoff (3 retries)
+
+### Phase 7 — Production Readiness
+- Dockerfiles for backend (uvicorn) + frontend (Nginx)
+- `docker-compose.yml` with Postgres + backend + frontend
+- GitHub Actions CI: ruff lint → pytest → frontend lint → frontend build
+- Rate limiting on `/auth/login`, configurable CORS
+
+### Phase 8 — Feature Enhancements
+- **8.1 Analytics:** Admin analytics page with stat cards, pie/bar charts, date-range filter, CSV export
+- **8.2 Email:** Resend integration for dispute lifecycle notifications (created, evidence needed, verdict)
+- **8.3 Bulk operations:** Admin bulk re-adjudicate and CSV export endpoints
+- **8.4 Webhook:** HMAC-SHA256 signed webhook endpoint for external dispute events
+- **8.5 Mobile responsive:** Bottom nav bar, responsive grid breakpoints, touch-friendly interactions
 
 ---
 
-## Execution Plan — Phases 5–8
+## Demo Credentials
 
-### Phase 5 — Frontend–Backend Integration (Next)
-
-Wire every frontend page to real backend APIs.
-
-**5.1 — Auth Flow**
-- LoginModal → `POST /api/auth/login` → receive JWT → store in memory/localStorage
-- `lib/api.js` — attach `Authorization: Bearer <token>` header, handle 401 → redirect to login
-- `Navbar` — show user name + logout when authenticated, role-based nav items
-
-**5.2 — Customer Portal**
-- Dispute list: `GET /portal/disputes` with user/status filters → render in table/grid
-- Create dispute: form → `POST /api/disputes`
-- Detail view: `GET /portal/disputes/{id}` → populate stepper, verdict card, evidence inspector
-- SSE: connect to `GET /portal/disputes/{id}/events` → update stepper/status in real time
-- Evidence upload: `POST /api/disputes/{id}/evidence`
-
-**5.3 — Merchant Dashboard**
-- Stats: aggregate calls or dedicated `GET /merchant/stats` → stats cards
-- Dispute list: `GET /merchant/disputes` → dispute table
-- Defence upload: evidence upload form for merchant-side documents
-
-**5.4 — Admin Audit Log**
-- `GET /admin/audit` → paginated list of AuditTrail entries with expandable metadata
-
-**Verification:** User can log in as customer, file a dispute, see it progress to verdict via SSE.
-
-### Phase 6 — Error Handling + Loading States
-
-**6.1 — Unified error boundary** — React error boundary wrapping each page, with retry
-**6.2 — Loading skeletons** — skeleton placeholders for dispute list, detail, audit log
-**6.3 — Toast notifications** — success/error toasts for create/upload actions
-**6.4 — Offline/retry** — SSE reconnect logic, retry on API failure with exponential backoff
-**6.5 — Form validation** — client-side validation for dispute creation, evidence upload
-
-**Verification:** Kill backend while using app → see graceful error states → restart → app recovers.
-
-### Phase 7 — Production Readiness
-
-**7.1 — Docker**
-- `Dockerfile` (backend): Python 3.13 slim, uvicorn
-- `Dockerfile` (frontend): Nginx serving static build
-- `docker-compose.yml`: postgres + backend + frontend, env vars, volumes
-
-**7.2 — CI/CD**
-- GitHub Actions: lint → test → build → docker push (or deploy)
-- Backend: `ruff check`, `pytest`
-- Frontend: `eslint`, `vite build`
-
-**7.3 — Security hardening**
-- Rate limiting on auth endpoint
-- CORS tightened to production domain
-- Helmet-style headers via middleware
-
-**Verification:** `docker compose up --build` → app accessible on `localhost:80` → full flow works.
-
-### Phase 8 — Feature Enhancements
-
-**8.1 — Dashboard analytics**
-- Charts (dispute volume, resolution rate, avg time, merchant breakdown)
-- Date range picker + export CSV
-
-**8.2 — Email notifications**
-- SendGrid / SMTP integration for dispute status changes
-- Email templates for verdict, evidence request, escalation
-
-**8.3 — Bulk operations (admin)**
-- Select multiple disputes → bulk assign, re-adjudicate, export
-- CSV/Excel import for existing disputes
-
-**8.4 — Webhook endpoint**
-- External systems can push dispute events
-- Webhook signing + retry logic
-
-**8.5 — Mobile responsive pass**
-- Audit all portal/merchant/admin pages for mobile breakpoints
-- Touch-friendly interactions (swipe, long-press)
-
-**Verification:** All 8.1–8.5 features functional, tests passing, no regression.
+| Role | Email |
+|------|-------|
+| Customer | `alice@example.com` |
+| Merchant | `merchant@acme.com` |
+| Admin | `admin@drs.com` |
 
 ---
 
 ## Quick Start
 
+### Prerequisites
+- Python 3.13+
+- Node.js 20+
+- PostgreSQL 16+
+
+### Backend
 ```bash
-# Backend
 cd backend
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-# Ensure PostgreSQL is running, then:
-uvicorn app.main:app --reload
 
-# Frontend
+# Set up environment (copy from .env.example or create .env)
+# Required: DATABASE_URL, JWT_SECRET_KEY, GEMINI_API_KEY, GROQ_API_KEY
+
+# Run migrations
+python -m alembic upgrade head
+
+# Seed demo data
+python app/seed.py
+
+# Start server
+uvicorn app.main:app --reload
+```
+
+### Frontend
+```bash
 cd frontend
 npm install
 npx vite
 ```
 
-Backend at `http://localhost:8000`, frontend at `http://localhost:5173`.
+### Access
+- Backend API: `http://localhost:8000`
+- API Docs: `http://localhost:8000/docs`
+- Frontend UI: `http://localhost:5173`
+
+---
+
+## Evaluation
+
+```bash
+cd backend
+# Dry-run (print scoring rules without LLM)
+python tests/evaluate_correctness.py --dry-run
+
+# Fast evaluation (deterministic only, ~30s)
+python tests/evaluate_correctness.py --fast
+
+# Full evaluation (with LLM, requires API keys, ~2-3 min)
+python tests/evaluate_correctness.py
+```
 
 ---
 
@@ -168,23 +139,30 @@ Backend at `http://localhost:8000`, frontend at `http://localhost:5173`.
 DRS/
 ├── backend/
 │   ├── app/
-│   │   ├── api/            # FastAPI route modules
-│   │   ├── core/           # Config, DB, security
-│   │   ├── models/         # SQLAlchemy ORM models
+│   │   ├── api/            # FastAPI route modules (auth, disputes, portal, admin, webhooks, merchants, evidence)
+│   │   ├── core/           # Config, DB, security, rate limiting
+│   │   ├── models/         # SQLAlchemy ORM models (User, Merchant, Dispute, Evidence, AuditTrail, AutoFetchedLogs)
 │   │   ├── schemas/        # Pydantic request/response schemas
-│   │   ├── services/       # Business logic (OCR, reasoning, adjudication, auto-fetch)
-│   │   └── main.py         # FastAPI app entry
+│   │   ├── services/       # Business logic (OCR/vision, reasoning, adjudication, auto-fetch, email)
+│   │   └── main.py         # FastAPI app entry with CORS, middleware
 │   ├── alembic/            # DB migrations
-│   └── tests/
+│   └── tests/              # Pytest test suite + golden dataset + evaluation harness
 ├── frontend/
 │   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── hooks/          # Custom React hooks (SSE)
-│   │   ├── lib/            # API client
-│   │   ├── pages/          # Route pages
-│   │   ├── App.jsx         # Router
-│   │   └── main.jsx        # Entry
+│   │   ├── components/     # Reusable UI (Navbar, LoginModal, DisputeStepper, VerdictCard, etc.)
+│   │   ├── hooks/          # Custom hooks (useDisputeSSE)
+│   │   ├── lib/            # API client with retry logic
+│   │   ├── pages/          # Route pages (Landing, CustomerPortal, MerchantDashboard, AdminAuditLog, AdminAnalytics)
+│   │   ├── App.jsx         # Router with role guards
+│   │   └── main.jsx        # Entry point
 │   └── tailwind.config.js
-├── .env                    # Environment variables (gitignored)
+├── Test/                   # Golden dataset (TestDataset.json)
+├── docker-compose.yml      # Production container setup
 └── README.md
 ```
+
+---
+
+## License
+
+MIT

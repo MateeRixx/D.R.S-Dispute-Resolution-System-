@@ -1,13 +1,20 @@
+import enum
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, String, Text, Float, Integer, ForeignKey, Enum, DateTime, DECIMAL
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import (
+    DECIMAL,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    String,
+    Text,
+)
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
-
-import enum
 
 
 class DisputeStatus(str, enum.Enum):
@@ -46,9 +53,11 @@ class User(Base):
     full_name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=False)
     phone_number = Column(String(20), nullable=True)
+    merchant_id = Column(UUID(as_uuid=True), ForeignKey("merchants.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     disputes = relationship("Dispute", back_populates="user")
+    merchant = relationship("Merchant", back_populates="users")
 
 
 class Merchant(Base):
@@ -62,6 +71,7 @@ class Merchant(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     disputes = relationship("Dispute", back_populates="merchant")
+    users = relationship("User", back_populates="merchant")
 
 
 class Dispute(Base):

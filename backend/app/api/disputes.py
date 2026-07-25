@@ -2,15 +2,15 @@ from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy.exc import IntegrityError
 
 from app.core.database import get_db
-from app.models.dispute_models import Dispute, DisputeStatus, AuditTrail
+from app.models.dispute_models import AuditTrail, Dispute, DisputeStatus
 from app.schemas.dispute_schemas import DisputeCreate, DisputeResponse
-from app.services.auto_fetch import run_auto_fetch
 from app.services.adjudication import run_adjudication
+from app.services.auto_fetch import run_auto_fetch
 
 router = APIRouter(prefix="/disputes", tags=["Disputes"])
 

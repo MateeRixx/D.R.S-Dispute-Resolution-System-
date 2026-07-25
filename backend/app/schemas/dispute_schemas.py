@@ -5,7 +5,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from app.models.dispute_models import DisputeStatus, DisputeReasonCode, VerdictType, EvidenceSource
+from app.models.dispute_models import (
+    DisputeReasonCode,
+    DisputeStatus,
+    EvidenceSource,
+    VerdictType,
+)
 
 
 class UserCreate(BaseModel):
