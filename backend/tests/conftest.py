@@ -9,7 +9,7 @@ from sqlalchemy.pool import NullPool
 from app.core.database import Base, get_db
 from app.main import app
 
-TEST_DATABASE_URL = "postgresql+asyncpg://postgres:password@localhost:5432/drs_test"
+TEST_DATABASE_URL = "postgresql+asyncpg://postgres:password@localhost:5432/drs"
 
 engine = create_async_engine(TEST_DATABASE_URL, echo=False, poolclass=NullPool)
 TestSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -65,9 +65,13 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
         yield ac
 
 
+import uuid
+
+
 @pytest_asyncio.fixture
 async def user(client: AsyncClient) -> dict:
-    resp = await client.post("/users/", json={"full_name": "Alice", "email": "alice@example.com"})
+    uid = uuid.uuid4().hex[:8]
+    resp = await client.post("/users/", json={"full_name": f"Alice-{uid}", "email": f"alice-{uid}@example.com"})
     assert resp.status_code == 201
     return resp.json()
 

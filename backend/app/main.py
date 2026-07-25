@@ -7,6 +7,7 @@ from app.api.merchants import router as merchants_router
 from app.api.evidence import router as evidence_router
 from app.api.portal import router as portal_router
 from app.api.auth import router as auth_router
+from app.api.admin import router as admin_router
 
 app = FastAPI(
     title="DRS — Dispute Resolution System",
@@ -27,6 +28,7 @@ app.include_router(merchants_router)
 app.include_router(evidence_router)
 app.include_router(portal_router)
 app.include_router(auth_router)
+app.include_router(admin_router)
 
 
 @app.get("/health")
