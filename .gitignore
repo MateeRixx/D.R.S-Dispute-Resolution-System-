@@ -1,0 +1,16 @@
+GUIDE
+
+# Backend
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.env
+*.db
+
+# Frontend
+node_modules/
+dist/
+

@@ -1,0 +1,21 @@
+{
+  "name": "drs",
+  "version": "1.0.0",
+  "description": "> Automated Online Dispute Resolution for Indian D2C E-commerce Credit Card Transactions",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MateeRixx/D.R.S-Dispute-Resolution-System-.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/MateeRixx/D.R.S-Dispute-Resolution-System-/issues"
+  },
+  "homepage": "https://github.com/MateeRixx/D.R.S-Dispute-Resolution-System-#readme"
+}
