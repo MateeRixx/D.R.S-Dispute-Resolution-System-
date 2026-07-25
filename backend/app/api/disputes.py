@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -9,12 +9,18 @@ from sqlalchemy.exc import IntegrityError
 from app.core.database import get_db
 from app.models.dispute_models import Dispute, DisputeStatus, AuditTrail
 from app.schemas.dispute_schemas import DisputeCreate, DisputeResponse
+from app.services.auto_fetch import run_auto_fetch
+from app.services.adjudication import run_adjudication
 
 router = APIRouter(prefix="/disputes", tags=["Disputes"])
 
 
 @router.post("/", response_model=DisputeResponse, status_code=status.HTTP_201_CREATED)
-async def create_dispute(payload: DisputeCreate, db: AsyncSession = Depends(get_db)):
+async def create_dispute(
+    payload: DisputeCreate,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
     try:
         dispute = Dispute(
             transaction_id=payload.transaction_id,
@@ -36,6 +42,14 @@ async def create_dispute(payload: DisputeCreate, db: AsyncSession = Depends(get_
             metadata_json={"reason_code": payload.reason_code.value, "amount": str(payload.amount)},
         )
         db.add(audit)
+
+        background_tasks.add_task(
+            run_auto_fetch,
+            dispute_id=dispute.id,
+            transaction_id=payload.transaction_id,
+            order_id=payload.transaction_id,
+        )
+        background_tasks.add_task(run_adjudication, dispute_id=dispute.id)
 
         await db.refresh(dispute)
         result = await db.execute(
